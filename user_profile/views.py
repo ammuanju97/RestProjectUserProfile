@@ -1,3 +1,5 @@
+from django.contrib.auth.models import User
+
 from rest_framework import status
 
 from rest_framework.permissions import IsAuthenticated
@@ -6,7 +8,7 @@ from rest_framework.views import APIView
 
 from .models import UserProfile
 from .serializers import UserProfileSerializer, ProfileEditSerializer
-
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserProfileCreateView(APIView):
     
@@ -37,3 +39,31 @@ class UserProfileUpdateView(APIView):
             {"message": "Profile Updated Sucessfully"},
             status=status.HTTP_200_OK,
         )
+
+
+class UserProfileView(APIView):
+    
+    permission_classes = (IsAuthenticated,)
+       
+    def get(self, request):
+        """
+        view user profile
+        """
+        user = request.user
+        serializer = UserProfileSerializer(user, many=False)
+        return Response(serializer.data)
+    
+    def post(self, request):
+        """
+        using refresh token we can generate access token agaian
+        """
+        refresh_token = request.data.get("refresh_token")
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+        except:
+            return Response({"message": "Invalid refresh token","status":0})
+
+        return Response({"data":{"AccessToken": access_token},"status":1})
+   
